@@ -14,33 +14,33 @@ app = FastAPI(title='LogScout')
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 
 
-@app.get('/api/logs/nginx')
+@app.get('/logs/nginx')
 def nginx_access(lines: int = Query(2000, ge=100, le=10000)):
     return parse_nginx_access(NGINX_ACCESS, max_lines=lines)
 
 
-@app.get('/api/logs/nginx/errors')
+@app.get('/logs/nginx/errors')
 def nginx_errors(lines: int = Query(500, ge=50, le=5000)):
     return parse_nginx_errors(NGINX_ERROR, max_lines=lines)
 
 
-@app.get('/api/logs/linkscout')
+@app.get('/logs/linkscout')
 def linkscout(lines: int = Query(500, ge=50, le=5000)):
     return parse_journald('linkscout', max_lines=lines)
 
 
-@app.get('/api/logs/bristle')
+@app.get('/logs/bristle')
 def bristle(lines: int = Query(500, ge=50, le=5000)):
     return parse_journald('bristle', max_lines=lines)
 
 
-@app.get('/api/scanners')
+@app.get('/scanners')
 def scanners(lines: int = Query(5000, ge=500, le=20000)):
     entries = parse_nginx_access(NGINX_ACCESS, max_lines=lines)
     return detect_scanners(entries)
 
 
-@app.get('/api/summary')
+@app.get('/summary')
 def summary(lines: int = Query(5000, ge=500, le=20000)):
     entries = parse_nginx_access(NGINX_ACCESS, max_lines=lines)
     status_counts: dict[str, int] = {}
