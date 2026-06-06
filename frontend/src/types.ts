@@ -24,12 +24,14 @@ export interface JournalEntry {
 
 export interface ScannerAlert {
   ip: string
+  detection_type: 'burst_404' | 'sensitive_path'
   window_start: string
   window_end: string
   count: number
   total_404s: number
   paths: string[]
   agents: string[]
+  patterns_matched: string[]
 }
 
 export interface Summary {

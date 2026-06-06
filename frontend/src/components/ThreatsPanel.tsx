@@ -23,6 +23,51 @@ function windowDuration(start: string, end: string) {
   }
 }
 
+function ScannerCard({ alert }: { alert: ScannerAlert }) {
+  const isBurst = alert.detection_type === 'burst_404'
+
+  return (
+    <div className={`scanner-card ${isBurst ? 'scanner-card-burst' : 'scanner-card-sensitive'}`}>
+      <div className="scanner-card-head">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span className="scanner-ip">{alert.ip}</span>
+          <span className={`detection-badge ${isBurst ? 'badge-burst' : 'badge-sensitive'}`}>
+            {isBurst ? '404 BURST' : 'SENSITIVE PATH'}
+          </span>
+        </div>
+        <span className="scanner-count">
+          {isBurst
+            ? `${alert.count} hits · ${windowDuration(alert.window_start, alert.window_end)}`
+            : `${alert.patterns_matched.length} patterns · ${alert.count} requests`}
+          {alert.total_404s > 0 && !isBurst && ` · ${alert.total_404s} 404s`}
+        </span>
+      </div>
+
+      <div className="scanner-meta">
+        {fmtTime(alert.window_start)} → {fmtTime(alert.window_end)}
+      </div>
+
+      {!isBurst && alert.patterns_matched.length > 0 && (
+        <div className="scanner-paths" style={{ marginBottom: 8 }}>
+          {alert.patterns_matched.map(p => (
+            <span key={p} className="path-tag pattern-tag">{p}</span>
+          ))}
+        </div>
+      )}
+
+      <div className="scanner-paths">
+        {alert.paths.map(p => (
+          <span key={p} className="path-tag">{p}</span>
+        ))}
+      </div>
+
+      {alert.agents.length > 0 && (
+        <div className="scanner-agents">UA: {alert.agents[0]}</div>
+      )}
+    </div>
+  )
+}
+
 export default function ThreatsPanel() {
   const [data, setData] = useState<ScannerAlert[] | null>(null)
   const [loading, setLoading] = useState(true)
@@ -33,8 +78,7 @@ export default function ThreatsPanel() {
     setLoading(true)
     setError(null)
     try {
-      const d = await api.scanners()
-      setData(d)
+      setData(await api.scanners())
       setUpdatedAt(new Date())
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Request failed')
@@ -45,12 +89,17 @@ export default function ThreatsPanel() {
 
   useEffect(() => { load() }, [load])
 
+  const burst = data?.filter(a => a.detection_type === 'burst_404') ?? []
+  const sensitive = data?.filter(a => a.detection_type === 'sensitive_path') ?? []
+
   return (
     <div>
       <div className="panel-header">
         <div>
           <div className="panel-title">Threat Detection</div>
-          <div className="panel-subtitle">IPs with 5+ 404s in any 60-second window</div>
+          <div className="panel-subtitle">
+            404 burst (5+ in 60s) · sensitive path probe (3+ distinct patterns)
+          </div>
         </div>
         <div className="panel-actions">
           {updatedAt && <span className="updated-at">Updated {updatedAt.toLocaleTimeString()}</span>}
@@ -61,38 +110,28 @@ export default function ThreatsPanel() {
       </div>
 
       {loading && <div className="state-box">Analyzing logs…</div>}
-      {error && <div className="state-box error">Error: {error}</div>}
+      {error   && <div className="state-box error">Error: {error}</div>}
+
       {!loading && !error && data?.length === 0 && (
         <div className="state-box clean">
-          No scanner signatures detected in the last 5,000 requests. Your server is clean.
+          No scanner signatures detected in the last 5,000 requests.
         </div>
       )}
+
       {!loading && !error && data && data.length > 0 && (
         <div className="scanner-list">
-          {data.map(alert => (
-            <div key={alert.ip} className="scanner-card">
-              <div className="scanner-card-head">
-                <span className="scanner-ip">{alert.ip}</span>
-                <span className="scanner-count">
-                  {alert.count} hits · {windowDuration(alert.window_start, alert.window_end)}
-                  {alert.total_404s > alert.count && ` · ${alert.total_404s} total 404s`}
-                </span>
-              </div>
-              <div className="scanner-meta">
-                {fmtTime(alert.window_start)} → {fmtTime(alert.window_end)}
-              </div>
-              <div className="scanner-paths">
-                {alert.paths.map(p => (
-                  <span key={p} className="path-tag">{p}</span>
-                ))}
-              </div>
-              {alert.agents.length > 0 && (
-                <div className="scanner-agents">
-                  UA: {alert.agents[0]}
-                </div>
-              )}
-            </div>
-          ))}
+          {burst.length > 0 && (
+            <>
+              <div className="threat-section-label">404 Burst ({burst.length})</div>
+              {burst.map(a => <ScannerCard key={`${a.ip}-burst`} alert={a} />)}
+            </>
+          )}
+          {sensitive.length > 0 && (
+            <>
+              <div className="threat-section-label">Sensitive Path Probes ({sensitive.length})</div>
+              {sensitive.map(a => <ScannerCard key={`${a.ip}-sensitive`} alert={a} />)}
+            </>
+          )}
         </div>
       )}
     </div>

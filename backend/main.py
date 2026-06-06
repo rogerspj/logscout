@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
 from log_parsers import parse_nginx_access, parse_nginx_errors, parse_journald
-from scanner_detection import detect_scanners
+from scanner_detection import detect_all
 
 NGINX_ACCESS = os.environ.get('NGINX_ACCESS_LOG', '/var/log/nginx/access.log')
 NGINX_ERROR = os.environ.get('NGINX_ERROR_LOG', '/var/log/nginx/error.log')
@@ -37,7 +37,7 @@ def bristle(lines: int = Query(500, ge=50, le=5000)):
 @app.get('/scanners')
 def scanners(lines: int = Query(5000, ge=500, le=20000)):
     entries = parse_nginx_access(NGINX_ACCESS, max_lines=lines)
-    return detect_scanners(entries)
+    return detect_all(entries)
 
 
 @app.get('/summary')
@@ -59,7 +59,7 @@ def summary(lines: int = Query(5000, ge=500, le=20000)):
     return {
         'total_requests': len(entries),
         'status_counts': status_counts,
-        'scanner_count': len(detect_scanners(entries)),
+        'scanner_count': len(detect_all(entries)),
         'top_ips': [{'ip': ip, 'count': c} for ip, c in sorted(ip_counts.items(), key=lambda x: -x[1])[:10]],
         'top_paths': [{'path': p, 'count': c} for p, c in sorted(path_counts.items(), key=lambda x: -x[1])[:10]],
     }
