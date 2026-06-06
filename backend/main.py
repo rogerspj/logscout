@@ -4,11 +4,12 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
-from log_parsers import parse_nginx_access, parse_nginx_errors, parse_journald
+from log_parsers import parse_nginx_access, parse_nginx_errors, parse_journald, parse_honeypot_log
 from scanner_detection import detect_all
 
 NGINX_ACCESS = os.environ.get('NGINX_ACCESS_LOG', '/var/log/nginx/access.log')
-NGINX_ERROR = os.environ.get('NGINX_ERROR_LOG', '/var/log/nginx/error.log')
+NGINX_ERROR  = os.environ.get('NGINX_ERROR_LOG',  '/var/log/nginx/error.log')
+HONEYPOT_LOG = os.environ.get('HONEYPOT_LOG',     '/var/log/nginx/honeypot.log')
 
 app = FastAPI(title='LogScout')
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
@@ -32,6 +33,11 @@ def linkscout(lines: int = Query(500, ge=50, le=5000)):
 @app.get('/logs/bristle')
 def bristle(lines: int = Query(500, ge=50, le=5000)):
     return parse_journald('bristle', max_lines=lines)
+
+
+@app.get('/honeypot')
+def honeypot():
+    return parse_honeypot_log(HONEYPOT_LOG)
 
 
 @app.get('/scanners')

@@ -34,6 +34,12 @@ export interface ScannerAlert {
   patterns_matched: string[]
 }
 
+export interface HoneypotHit {
+  time: string
+  ip: string
+  path: string
+}
+
 export interface Summary {
   total_requests: number
   status_counts: Record<string, number>

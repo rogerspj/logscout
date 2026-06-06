@@ -61,6 +61,32 @@ def parse_nginx_errors(path: str, max_lines: int = 1000) -> list[dict]:
     return entries
 
 
+HONEYPOT_LOG_RE = re.compile(r'(?P<time>[^|]+) \| (?P<ip>[^|]+) \| (?P<request>.+)')
+
+
+def parse_honeypot_log(path: str, max_lines: int = 10000) -> list[dict]:
+    entries = []
+    try:
+        lines = Path(path).read_text(errors='replace').splitlines()
+        for line in lines[-max_lines:]:
+            m = HONEYPOT_LOG_RE.match(line.strip())
+            if not m:
+                continue
+            time_str = m.group('time').strip()
+            ip = m.group('ip').strip()
+            request = m.group('request').strip()
+            try:
+                ts = datetime.strptime(time_str, NGINX_TIME_FMT).isoformat()
+            except ValueError:
+                ts = time_str
+            req_parts = request.split(' ', 2)
+            path_part = req_parts[1] if len(req_parts) >= 2 else request
+            entries.append({'time': ts, 'ip': ip, 'path': path_part})
+    except FileNotFoundError:
+        pass
+    return entries
+
+
 def parse_journald(service: str, max_lines: int = 1000) -> list[dict]:
     entries = []
     try:

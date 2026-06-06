@@ -10,9 +10,9 @@ venv/
 node_modules/
 frontend/dist/
 
-# Env / secrets
-.env
-.env.local
+# Env / secrets (root-level only; honeypot/.env is intentionally tracked)
+/.env
+/.env.local
 
 # OS
 .DS_Store

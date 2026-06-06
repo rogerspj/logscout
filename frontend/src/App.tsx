@@ -1,27 +1,31 @@
 import { useState, useEffect } from 'react'
 import ThreatsPanel from './components/ThreatsPanel'
+import HoneypotPanel from './components/HoneypotPanel'
 import NginxPanel from './components/NginxPanel'
 import JournalPanel from './components/JournalPanel'
 import SummaryPanel from './components/SummaryPanel'
 import { api } from './api'
 
-type Tab = 'threats' | 'nginx' | 'errors' | 'linkscout' | 'bristle' | 'summary'
+type Tab = 'threats' | 'honeypot' | 'nginx' | 'errors' | 'linkscout' | 'bristle' | 'summary'
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('threats')
   const [scannerCount, setScannerCount] = useState<number | null>(null)
+  const [honeypotCount, setHoneypotCount] = useState<number | null>(null)
 
   useEffect(() => {
     api.scanners().then(s => setScannerCount(s.length)).catch(() => {})
+    api.honeypot().then(h => setHoneypotCount(h.length)).catch(() => {})
   }, [])
 
   const tabs: { id: Tab; label: string; badge?: number | null }[] = [
-    { id: 'threats', label: 'Threats', badge: scannerCount },
-    { id: 'nginx', label: 'Nginx Access' },
-    { id: 'errors', label: 'Nginx Errors' },
-    { id: 'linkscout', label: 'LinkScout' },
-    { id: 'bristle', label: 'Bristle' },
-    { id: 'summary', label: 'Summary' },
+    { id: 'threats',  label: 'Threats',      badge: scannerCount },
+    { id: 'honeypot', label: 'Honeypot',      badge: honeypotCount },
+    { id: 'nginx',    label: 'Nginx Access' },
+    { id: 'errors',   label: 'Nginx Errors' },
+    { id: 'linkscout',label: 'LinkScout' },
+    { id: 'bristle',  label: 'Bristle' },
+    { id: 'summary',  label: 'Summary' },
   ]
 
   return (
@@ -47,6 +51,7 @@ export default function App() {
       </header>
       <main className="main">
         {tab === 'threats'   && <ThreatsPanel />}
+        {tab === 'honeypot'  && <HoneypotPanel />}
         {tab === 'nginx'     && <NginxPanel mode="access" />}
         {tab === 'errors'    && <NginxPanel mode="errors" />}
         {tab === 'linkscout' && <JournalPanel service="linkscout" />}

@@ -1,4 +1,4 @@
-import type { NginxEntry, NginxError, JournalEntry, ScannerAlert, Summary } from './types'
+import type { NginxEntry, NginxError, JournalEntry, ScannerAlert, HoneypotHit, Summary } from './types'
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch('/logscout-api' + path)
@@ -12,5 +12,6 @@ export const api = {
   linkscout:   () => get<JournalEntry[]>('/logs/linkscout'),
   bristle:     () => get<JournalEntry[]>('/logs/bristle'),
   scanners:    () => get<ScannerAlert[]>('/scanners'),
+  honeypot:    () => get<HoneypotHit[]>('/honeypot'),
   summary:     () => get<Summary>('/summary'),
 }
